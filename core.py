@@ -1,84 +1,49 @@
 """
 Arquivo de conexão servidor-notebook
 """
-
-# %% [markdown]
-# # Imports
-
-# %%
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import scipy.stats as sts
 import seaborn as sns
 import plotly.express as px
-# %%
-df = pd.read_csv('Pokemon.csv')
-df.head(5)
+import streamlit as st
 
-# %%
-df.info()
+def comparar_tipos(df:pd.DataFrame, atributo: str):
+    """
+    Gera o gráfico e executa o t-test, entre os monotipos e duplo tipo
 
-# %% [markdown]
-# ### Indentificando valores nulos/NaN
+    params:
+    -df: Dataframe com os dados
+    -atributo: String com nome da coluna númerica
+    """
 
-# %%
-df['Type 2'].isnull().sum()
+    #Coluna comparativa
+    df['eh_duplo'] = df['Type 2'].notnull()
 
-# %% [markdown]
-# Os dados que não possuem entrada se referem aos pokemons únicamente tipados.
+    #Separação
+    grupo_mono = df[df['eh_duplo'] == False]
+    grupo_dual = df[df['eh_duplo'] == True]
 
-# %% [markdown]
-# ### Entendendo relações
+    #erro aceitavel, para verificacao na levene func
+    alpha = 0.05
 
-# %% [markdown]
-# Com o dataset analisado, podemos começar a gerar insights sobre o mesmo.
+    if sts.levene(grupo_mono[atributo],grupo_dual[atributo]).pvalue > alpha:
+        t_stat, p = sts.ttest_ind(grupo_mono[atributo], grupo_dual[atributo],equal_var=False)
+    else:
+        t_stat, p = sts.ttest_ind(grupo_mono[atributo], grupo_dual[atributo],equal_var=True)
 
-# %% [markdown]
-# $$
-#     H0: Fd = Fu
-# $$
+    #Resultado textual
+    st.subheader(f"Teste t: Monotipo vs Duplo tipo para '{atributo}'")
+    st.markdown(f"**Estatística t: ** {t_stat:.3f}")
+    st.markdown(f"**p-valor:** {p:.5f}")
 
-# %% [markdown]
-# Aqui estamos tentando analisar se a força(Attack) dos pokemons duplamente tipados é superior aos unicamente tipados, utilizando o Teste t de Student para tal.
+    if p < alpha:
+        st.success(f"Diferença estatisticamente significativa (p < {alpha})")
+    else:
+        st.info(f"Sem diferença estatisticamente significativa (p >= {alpha})")
+    
+    #Gráfico
+    fig = px.box(df, x = 'eh_duplo', y = atributo, color = 'eh_duplo', labels={'eh_duplo': 'Duplo tipo?', atributo: atributo}, title = f"Distribuição de {atributo} entre Mono tipo e Duplo tipo")
 
-# %%
-###PLOT DA DISTRIBUICAO DE ATAQUE X TIPAGEM
-def plot_AtaqxTip():
-    Fduplamente_tipados = df[df["Type 2"].notnull()]['Attack']
-    Funicamente_tipados = df[df["Type 2"].isnull()]['Attack']
-
-
-    plt.figure(figsize=(10,6))
-    plt.hist(x = Fduplamente_tipados, edgecolor = 'black',density = True,label='Duplamente tipados')
-    plt.hist(x = Funicamente_tipados, edgecolor = 'black',density = True,alpha = 0.65,label='Unicamente tipados')
-    plt.xlabel("Força de ataque")
-    plt.ylabel("Distribuição de pokemons")
-    plt.title("Distribuição X Ataque")
-    plt.legend()
-    plt.show()
-
-
-
-# %% [markdown]
-# Então, se a H0 é falsa, vamos entender qual o comportamento da força entre os tipos.
-# A força dos duplamente tipados é maior?
-# $$
-# H1: Fd > Fu
-# $$
-
-# %%
-#alpha = 0.05
-#ForcaFinal = sts.ttest_ind(Fduplamente_tipados,Funicamente_tipados,equal_var=pForça,alternative='greater').pvalue
-#if ForcaFinal < alpha:
-#    print("H1 é verdadeira, logo a força de ataque dos duplamente tipados é maior")
-#else:
-#    print("H1 é falsa, então a força dos duplamente tipados é menor que a força dos unicamente tipados")
-
-# %%
-
-
-# %%
-
-
-
+    st.plotly_chart(fig, use_container_width=True)
