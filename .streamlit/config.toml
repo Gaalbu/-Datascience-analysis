@@ -1,0 +1,11 @@
+#config do streamlit p/ tema e etc.
+
+
+
+[theme]
+base="light"
+primaryColor="#ff1c1c"  # Vermelho Pokébola
+backgroundColor="#f2f2f2"
+secondaryBackgroundColor="#ffffff"
+textColor="#2c2c2c"
+font="sans serif"
