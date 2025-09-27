@@ -124,7 +124,7 @@ def treinar_regressao(df, features, alvo):
     xTreino, xTeste, yTreino, yTeste = train_test_split(x, y, test_size=0.2, random_state=42)
 
     modelo = LinearRegression()
-    modelo.fit = (xTreino, yTreino)
+    modelo.fit(xTreino, yTreino)
     yPredicao = modelo.predict(xTeste)
 
     metricas = {
@@ -143,7 +143,7 @@ def correlacaoPearson(df, col1, col2):
 def scatterAtualVsPredicao(yTeste, yPredicao, alvo):
     fig = px.scatter(
         x = yTeste, y=yPredicao,
-        labels = {'x': f'{alvo} real', 'y':f'{alvo} previso'},
+        labels = {'x': f'{alvo} real', 'y':f'{alvo} previsto'},
         title=f'Regressão Linear - {alvo}'
     )
     fig.add_shape(
