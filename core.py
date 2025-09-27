@@ -8,6 +8,9 @@ import scipy.stats as sts
 import seaborn as sns
 import plotly.express as px
 import streamlit as st
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
 
 def comparar_tipos(df:pd.DataFrame, atributo: str):
     """
@@ -47,6 +50,7 @@ def comparar_tipos(df:pd.DataFrame, atributo: str):
     fig = px.box(df, x = 'eh_duplo', y = atributo, color = 'eh_duplo', labels={'eh_duplo': 'Duplo tipo?', atributo: atributo}, title = f"Distribuição de {atributo} entre Mono tipo e Duplo tipo")
 
     st.plotly_chart(fig, use_container_width=True)
+
 
 def gerar_grafico_balanco(df, tipos_selecionados):
     df_copy = df.copy()
@@ -105,3 +109,57 @@ def gerar_grafico_balanco(df, tipos_selecionados):
     )
     
     st.plotly_chart(fig, use_container_width=True)
+
+
+
+#Treinamento da regressão linear, modelagem
+def treinar_regressao(df, features, alvo):
+    
+    if not features:
+        raise ValueError ('Sem features p/ regressão')
+
+    x = df[features]
+    y = df[alvo]
+
+    xTreino, xTeste, yTreino, yTeste = train_test_split(x, y, test_size=0.2, random_state=42)
+
+    modelo = LinearRegression()
+    modelo.fit = (xTreino, yTreino)
+    yPredicao = modelo.predict(xTeste)
+
+    metricas = {
+        'MSE': mean_squared_error(yTeste, yPredicao),
+        'R2': r2_score(yTeste, yPredicao)
+    }
+    return modelo, yTeste, yPredicao, metricas
+
+#teste
+def correlacaoPearson(df, col1, col2):
+    corr, p = sts.pearsonr(df[col1], df[col2])
+    return corr, p
+
+
+#Scatter da comparação entre o teste e a predição
+def scatterAtualVsPredicao(yTeste, yPredicao, alvo):
+    fig = px.scatter(
+        x = yTeste, y=yPredicao,
+        labels = {'x': f'{alvo} real', 'y':f'{alvo} previso'},
+        title=f'Regressão Linear - {alvo}'
+    )
+    fig.add_shape(
+        type='line', x0 = yTeste.min(), y0 = yTeste.min(),
+        x1 = yTeste.max(), y1 = yTeste.max(),
+        line = dict(color = 'red', dash = 'dash')
+    )
+    return fig
+
+#Plotando a matriz no streamlit
+def plotMatrizCorrelacao(df, cols):
+    matrizCorrelacao = df[cols].corr()
+    fig = px.imshow(
+        matrizCorrelacao,
+        text_auto=True,
+        color_continuous_scale='RdBu_r',
+        title='Matriz de Correlação Pokémon'
+    )
+    return fig
